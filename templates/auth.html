@@ -1,32 +1,32 @@
 {% extends "base.html" %}
-{% block title %}{{ 'Log in' if mode == 'login' else 'Register' }}{% endblock %}
+{% block title %}{{ _('Log in') if mode == 'login' else _('Register') }}{% endblock %}
 {% block content %}
 <section class="narrow card">
   {% if mode == 'login' %}
-    <h1>Log in</h1>
+    <h1>{{ _('Log in') }}</h1>
     <form method="post" class="form">
       <input type="hidden" name="next" value="{{ next }}">
-      <label>Email <input type="email" name="email" required autocomplete="email" value="{{ request.form.email }}"></label>
-      <label>Password <input type="password" name="password" required autocomplete="current-password"></label>
-      <button class="btn">Log in</button>
+      <label>{{ _('Email') }} <input type="email" name="email" required autocomplete="email" value="{{ request.form.email }}"></label>
+      <label>{{ _('Password') }} <input type="password" name="password" required autocomplete="current-password"></label>
+      <button class="btn">{{ _('Log in') }}</button>
     </form>
-    <p class="muted">New patient? <a href="{{ url_for('register') }}">Create an account</a></p>
+    <p class="muted">{{ _('New patient?') }} <a href="{{ url_for('register') }}">{{ _('Create an account') }}</a></p>
     <details class="demo">
-      <summary>Demo accounts</summary>
-      <p>Patient: patient@smartcare.test / patient123<br>
-         Doctor: ahmed@smartcare.test / doctor123<br>
-         Admin: admin@smartcare.test / admin123</p>
+      <summary>{{ _('Demo accounts') }}</summary>
+      <p>{{ _('Patient') }}: <bdi>patient@smartcare.test / patient123</bdi><br>
+         {{ _('Doctor') }}: <bdi>ahmed@smartcare.test / doctor123</bdi><br>
+         {{ _('Administrator') }}: <bdi>admin@smartcare.test / admin123</bdi></p>
     </details>
   {% else %}
-    <h1>Create a patient account</h1>
+    <h1>{{ _('Create a patient account') }}</h1>
     <form method="post" class="form">
-      <label>Full name <input name="name" required autocomplete="name" value="{{ request.form.name }}"></label>
-      <label>Email <input type="email" name="email" required autocomplete="email" value="{{ request.form.email }}"></label>
-      <label>Phone <input type="tel" name="phone" autocomplete="tel" value="{{ request.form.phone }}"></label>
-      <label>Password <input type="password" name="password" required minlength="6" autocomplete="new-password"></label>
-      <button class="btn">Register</button>
+      <label>{{ _('Full name') }} <input name="name" required autocomplete="name" value="{{ request.form.name }}"></label>
+      <label>{{ _('Email') }} <input type="email" name="email" required autocomplete="email" value="{{ request.form.email }}"></label>
+      <label>{{ _('Phone') }} <input type="tel" name="phone" autocomplete="tel" value="{{ request.form.phone }}"></label>
+      <label>{{ _('Password') }} <input type="password" name="password" required minlength="6" autocomplete="new-password"></label>
+      <button class="btn">{{ _('Register') }}</button>
     </form>
-    <p class="muted">Already registered? <a href="{{ url_for('login') }}">Log in</a></p>
+    <p class="muted">{{ _('Already registered?') }} <a href="{{ url_for('login') }}">{{ _('Log in') }}</a></p>
   {% endif %}
 </section>
 {% endblock %}

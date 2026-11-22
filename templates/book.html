@@ -1,54 +1,55 @@
 {% extends "base.html" %}
-{% block title %}{{ 'Reschedule' if resched else 'Book' }} appointment{% endblock %}
+{% block title %}{{ _('Reschedule appointment') if resched else _('Book an appointment') }}{% endblock %}
 {% block content %}
 <section class="narrow card">
   {% if resched %}
-    <h1>Reschedule appointment</h1>
-    <p class="muted">Currently {{ resched.day|nice_date }} at {{ resched.time }} with {{ resched.doctor }}.</p>
+    <h1>{{ _('Reschedule appointment') }}</h1>
+    <p class="muted">{{ _('Currently {date} at {time} with {doctor}.').format(date=resched.day|nice_date, time=resched.time, doctor=_(resched.doctor)) }}</p>
   {% else %}
-    <h1>Book an appointment</h1>
+    <h1>{{ _('Book an appointment') }}</h1>
   {% endif %}
   <form method="post" class="form" id="book-form">
     {% if resched %}<input type="hidden" name="reschedule" value="{{ resched.id }}">{% endif %}
-    <label>Doctor
+    <label>{{ _('Doctor') }}
       <select name="doctor" id="doctor" required {% if resched %}disabled{% endif %}>
-        <option value="">Choose a doctor…</option>
+        <option value="">{{ _('Choose a doctor…') }}</option>
         {% for dept, docs in doctors|groupby('department') %}
-          <optgroup label="{{ dept }}">
+          <optgroup label="{{ _(dept) }}">
             {% for d in docs %}
               {% set chosen = (resched and resched.doctor_id == d.id) or pick.doctor == d.id|string %}
-              <option value="{{ d.id }}" {% if chosen %}selected{% endif %}>{{ d.name }}</option>
+              <option value="{{ d.id }}" {% if chosen %}selected{% endif %}>{{ _(d.name) }}</option>
             {% endfor %}
           </optgroup>
         {% endfor %}
       </select>
     </label>
     {% if resched %}<input type="hidden" name="doctor" value="{{ resched.doctor_id }}">{% endif %}
-    <label>Date
+    <label>{{ _('Date') }}
       <input type="date" name="day" id="day" required min="{{ today }}" max="{{ max_day }}" value="{{ pick.day or today }}">
     </label>
     <fieldset>
-      <legend>Available times</legend>
-      <div id="slots" class="slots" data-picked="{{ pick.time }}"><p class="muted">Choose a doctor and date.</p></div>
+      <legend>{{ _('Available times') }}</legend>
+      <div id="slots" class="slots" data-picked="{{ pick.time }}"><p class="muted">{{ _('Choose a doctor and date.') }}</p></div>
     </fieldset>
     {% if not resched %}
-      <label>Reason for visit (optional)
-        <textarea name="reason" rows="2" maxlength="500" placeholder="e.g. follow-up, tooth pain"></textarea>
+      <label>{{ _('Reason for visit (optional)') }}
+        <textarea name="reason" rows="2" maxlength="500" placeholder="{{ _('e.g. follow-up, tooth pain') }}"></textarea>
       </label>
     {% endif %}
-    <button class="btn">{{ 'Confirm new time' if resched else 'Book appointment' }}</button>
+    <button class="btn">{{ _('Confirm new time') if resched else _('Book appointment') }}</button>
   </form>
 </section>
 {% endblock %}
 {% block scripts %}
 <script>
+  const T = {{ {'loading': _('Loading…'), 'full': _('Fully booked on this day.'), 'off': _('The doctor does not work on this day.'), 'again': _('Try another date.')}|tojson }};
   const doctor = document.getElementById('doctor'), day = document.getElementById('day'), box = document.getElementById('slots');
   async function loadSlots() {
     if (!doctor.value || !day.value) return;
-    box.innerHTML = '<p class="muted">Loading…</p>';
+    box.innerHTML = `<p class="muted">${T.loading}</p>`;
     const res = await fetch(`/api/slots?doctor=${doctor.value}&day=${day.value}`).then(r => r.json());
     if (!res.slots.length) {
-      box.innerHTML = `<p class="muted">${res.works ? 'Fully booked on this day.' : 'The doctor does not work on this day.'} Try another date.</p>`;
+      box.innerHTML = `<p class="muted">${res.works ? T.full : T.off} ${T.again}</p>`;
       return;
     }
     box.innerHTML = res.slots.map(s =>

@@ -14,10 +14,13 @@ from flask import (Flask, abort, flash, g, jsonify, redirect, render_template,
                    request, session, url_for)
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from translations import AR, AR_DAYS, AR_MONTHS
+
 DB_PATH = Path(os.environ.get("HOSPITAL_DB") or Path(__file__).with_name("hospital.db"))
 SLOT_MINUTES = 30
 BOOKING_WINDOW_DAYS = 60
-# Change these to the real hospital details.
+LANGUAGES = ("en", "ar")
+# Change these to the real hospital details (and their Arabic versions in translations.py).
 HOSPITAL = {
     "name": "SmartCare Hospital",
     "phone": "+968 2400 0000",
@@ -76,6 +79,31 @@ DEMO_DOCTORS = [
 ]
 
 
+# ---------------------------------------------------------------- language
+@app.before_request
+def pick_language():
+    lang = request.cookies.get("lang")
+    g.lang = lang if lang in LANGUAGES else request.accept_languages.best_match(LANGUAGES) or "en"
+
+
+def _(text):
+    """Show UI text in the visitor's language. The English text is the key into translations.AR."""
+    return AR.get(text, text) if g.get("lang") == "ar" else text
+
+
+def safe_next(url, default):
+    """Only follow redirects to pages on this site."""
+    return url if url and url.startswith("/") and not url.startswith(("//", "/\\")) else default
+
+
+@app.route("/lang/<code>")
+def set_lang(code):
+    resp = redirect(safe_next(request.args.get("next"), url_for("index")))
+    if code in LANGUAGES:
+        resp.set_cookie("lang", code, max_age=365 * 24 * 3600, samesite="Lax")
+    return resp
+
+
 # ---------------------------------------------------------------- database
 def db():
     if "db" not in g:
@@ -86,7 +114,7 @@ def db():
 
 
 @app.teardown_appcontext
-def close_db(_):
+def close_db(_exc):
     conn = g.pop("db", None)
     if conn:
         conn.close()
@@ -157,9 +185,14 @@ def parse_day(value):
 
 
 @app.template_filter("nice_date")
-def nice_date(value):
+def nice_date(value, short=False):
     d = parse_day(value)
-    return d.strftime("%a %d %b %Y") if d else value
+    if not d:
+        return value
+    if g.get("lang") == "ar":
+        text = f"{AR_DAYS[d.weekday()]} {d.day}"
+        return text if short else f"{text} {AR_MONTHS[d.month - 1]} {d.year}"
+    return d.strftime("%a %d" if short else "%a %d %b %Y")
 
 
 # ---------------------------------------------------------------- auth
@@ -183,7 +216,7 @@ def start_session(user):
 
 @app.context_processor
 def inject_globals():
-    return {"hospital": HOSPITAL, "day_names": DAY_NAMES, "statuses": STATUSES}
+    return {"hospital": HOSPITAL, "day_names": DAY_NAMES, "statuses": STATUSES, "_": _, "lang": g.get("lang", "en")}
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -191,19 +224,19 @@ def register():
     if request.method == "POST":
         f = {k: request.form.get(k, "").strip() for k in ("name", "email", "phone", "password")}
         if not f["name"] or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", f["email"]):
-            flash("Please enter your name and a valid email.", "error")
+            flash(_("Please enter your name and a valid email."), "error")
         elif len(f["password"]) < 6:
-            flash("Password must be at least 6 characters.", "error")
+            flash(_("Password must be at least 6 characters."), "error")
         else:
             try:
                 uid = db().execute("INSERT INTO users(name,email,phone,password,role) VALUES(?,?,?,?,'patient')",
                                    (f["name"], f["email"], f["phone"], generate_password_hash(f["password"]))).lastrowid
                 db().commit()
             except sqlite3.IntegrityError:
-                flash("An account with this email already exists.", "error")
+                flash(_("An account with this email already exists."), "error")
             else:
                 start_session(q("SELECT * FROM users WHERE id=?", (uid,), one=True))
-                flash("Welcome! Your account has been created.", "ok")
+                flash(_("Welcome! Your account has been created."), "ok")
                 return redirect(url_for("dashboard"))
     return render_template("auth.html", mode="register")
 
@@ -215,9 +248,8 @@ def login():
         user = q("SELECT * FROM users WHERE email=?", (request.form.get("email", "").strip(),), one=True)
         if user and check_password_hash(user["password"], request.form.get("password", "")):
             start_session(user)
-            safe = nxt.startswith("/") and not nxt.startswith(("//", "/\\"))
-            return redirect(nxt if safe else url_for("dashboard"))
-        flash("Wrong email or password.", "error")
+            return redirect(safe_next(nxt, url_for("dashboard")))
+        flash(_("Wrong email or password."), "error")
     return render_template("auth.html", mode="login", next=nxt)
 
 
@@ -279,7 +311,7 @@ def book():
         if resched and doc and doc["id"] != resched["doctor_id"]:
             doc = None  # rescheduling keeps the same doctor
         if not doc or not day or too_far or slot not in free_slots(doc, day):
-            flash("That time is not available. Please choose another slot.", "error")
+            flash(_("That time is not available. Please choose another slot."), "error")
         else:
             try:
                 if resched:
@@ -289,10 +321,11 @@ def book():
                                  (session["uid"], doc["id"], day.isoformat(), slot, request.form.get("reason", "").strip()[:500]))
                 db().commit()
             except sqlite3.IntegrityError:
-                flash("Someone just booked that slot. Please pick another one.", "error")
+                flash(_("Someone just booked that slot. Please pick another one."), "error")
             else:
-                flash(f"Appointment {'rescheduled' if resched else 'booked'} with {doc['name']} on "
-                      f"{nice_date(day.isoformat())} at {slot}.", "ok")
+                msg = (_("Appointment rescheduled with {doctor} on {date} at {time}.") if resched
+                       else _("Appointment booked with {doctor} on {date} at {time}."))
+                flash(msg.format(doctor=_(doc["name"]), date=nice_date(day.isoformat()), time=slot), "ok")
                 return redirect(url_for("patient_home"))
 
     return render_template("book.html", doctors=doctors(), resched=resched,
@@ -325,9 +358,9 @@ def set_status(aid):
     try:
         db().execute("UPDATE appointments SET status=? WHERE id=?", (status, aid))
         db().commit()
-        flash(f"Appointment #{aid} marked as {status}.", "ok")
+        flash(_("Appointment #{id} marked as {status}.").format(id=aid, status=_(status)), "ok")
     except sqlite3.IntegrityError:
-        flash("That slot has been re-booked by another patient, so it cannot be restored.", "error")
+        flash(_("That slot has been re-booked by another patient, so it cannot be restored."), "error")
     return redirect(url_for("dashboard"))
 
 
@@ -369,15 +402,15 @@ def admin_home():
 @app.post("/admin/doctors/<int:did>")
 @login_required("admin")
 def admin_schedule(did):
-    days = [d for d in request.form.getlist("days") if d in {k for k, _ in DAY_NAMES}]
+    days = [d for d in request.form.getlist("days") if d in {k for k, _n in DAY_NAMES}]
     start, end = request.form.get("start_time", ""), request.form.get("end_time", "")
     if not re.fullmatch(r"\d\d:\d\d", start) or not re.fullmatch(r"\d\d:\d\d", end) or start >= end:
-        flash("Start time must be before end time.", "error")
+        flash(_("Start time must be before end time."), "error")
     else:
         db().execute("UPDATE users SET work_days=?, start_time=?, end_time=?, department=? WHERE id=? AND role='doctor'",
                      (",".join(days), start, end, request.form.get("department", "").strip() or "General Medicine", did))
         db().commit()
-        flash("Doctor schedule updated.", "ok")
+        flash(_("Doctor schedule updated."), "ok")
     return redirect(url_for("admin_home") + "#doctors")
 
 
@@ -386,15 +419,15 @@ def admin_schedule(did):
 def admin_add_doctor():
     f = {k: request.form.get(k, "").strip() for k in ("name", "email", "department", "password")}
     if not all(f.values()) or len(f["password"]) < 6:
-        flash("Fill in all doctor fields (password at least 6 characters).", "error")
+        flash(_("Fill in all doctor fields (password at least 6 characters)."), "error")
     else:
         try:
             db().execute("INSERT INTO users(name,email,password,role,department) VALUES(?,?,?,'doctor',?)",
                          (f["name"], f["email"], generate_password_hash(f["password"]), f["department"]))
             db().commit()
-            flash(f"{f['name']} added.", "ok")
+            flash(_("{name} added.").format(name=f["name"]), "ok")
         except sqlite3.IntegrityError:
-            flash("That email is already used.", "error")
+            flash(_("That email is already used."), "error")
     return redirect(url_for("admin_home") + "#doctors")
 
 
@@ -412,88 +445,135 @@ def reports():
                                        (week[0], week[-1]))}
     people = q("SELECT SUM(role='patient') patients, SUM(role='doctor') doctors FROM users", one=True)
     return render_template("reports.html", totals=totals, by_dept=by_dept, by_doc=by_doc, people=people,
-                           week=[(d, load.get(d, 0)) for d in week], generated=datetime.now().strftime("%d %b %Y %H:%M"))
+                           week=[(d, load.get(d, 0)) for d in week], generated=datetime.now().strftime("%d/%m/%Y %H:%M"))
 
 
 # ---------------------------------------------------------------- AI assistant
-SYMPTOMS = {
-    "General Medicine": "fever cough cold flu headache tired fatigue checkup sick stomach vomiting diarrhea general",
-    "Pediatrics": "child children baby kid kids son daughter infant newborn pediatric pediatrics",
-    "Cardiology": "heart chest palpitation palpitations cardiac cardiology pressure hypertension",
-    "Dermatology": "skin rash acne itch itching itchy hair eczema allergy dermatology",
-    "Orthopedics": "bone bones joint joints back knee shoulder fracture neck sprain orthopedic orthopedics",
-    "Dental": "tooth teeth toothache dental dentist gum gums",
-    "Ophthalmology": "eye eyes vision sight blurry glasses ophthalmology",
-}
-EMERGENCY = set("emergency urgent bleeding unconscious fainted faint accident stroke seizure suicide overdose".split())
+ARABIC_LETTERS = str.maketrans({"أ": "ا", "إ": "ا", "آ": "ا", "ى": "ي", "ة": "ه"})
+HARAKAT = re.compile("[\u064b-\u0652\u0640]")  # Arabic diacritics and tatweel
+PREFIXES = ("وال", "بال", "فال", "كال", "لل", "ال")
+
+
+def normalize(text):
+    return HARAKAT.sub("", text.lower()).translate(ARABIC_LETTERS)
+
+
+def stem(word):
+    """Drop one attached Arabic article prefix (الأسنان -> اسنان)."""
+    for p in PREFIXES:
+        if word.startswith(p) and len(word) - len(p) >= 2:
+            return word[len(p):]
+    return word
 
 
 def tokens(text):
-    words = set(re.findall(r"[a-z']+", text.lower()))
-    return words | {w[:-1] for w in words if w.endswith("s")}  # crude plural stemming
+    """Word forms in a message: as typed, without the article, without a leading 'و' (and), without plural -s."""
+    words = set()
+    for w in re.findall(r"\w+", normalize(text)):
+        s = stem(w)
+        words |= {w, s}
+        if s.startswith("و") and len(s) > 3:
+            words.add(stem(s[1:]))
+        if s.endswith("s"):
+            words.add(s[:-1])
+    return words
+
+
+def vocab(text):
+    return {stem(w) for w in re.findall(r"\w+", normalize(text))}
+
+
+def hits(words, terms):
+    """How many terms appear. Arabic terms of 3+ letters also match the start of a word (اسناني -> اسنان)."""
+    return sum(1 for t in terms if t in words or (len(t) > 2 and not t.isascii() and any(w.startswith(t) for w in words)))
+
+
+SYMPTOMS = {
+    "General Medicine": vocab("fever cough cold flu headache tired fatigue checkup sick stomach vomiting diarrhea general "
+                              "حمى حرارة سخونة كحة سعال زكام انفلونزا صداع تعب ارهاق مغص معدة اسهال استفراغ ترجيع فحص باطنية"),
+    "Pediatrics": vocab("child children baby kid kids son daughter infant newborn pediatric pediatrics "
+                        "طفل أطفال طفلي ابني ولدي بنتي رضيع مولود"),
+    "Cardiology": vocab("heart chest palpitation palpitations cardiac cardiology pressure hypertension قلب خفقان ضغط صدر"),
+    "Dermatology": vocab("skin rash acne itch itching itchy hair eczema allergy dermatology جلد جلدية حكة طفح اكزيما حساسية تساقط"),
+    "Orthopedics": vocab("bone bones joint joints back knee shoulder fracture neck sprain orthopedic orthopedics "
+                         "عظم عظام مفصل مفاصل ظهري ركبة ركبتي كتف كسر كسور رقبة رقبتي التواء"),
+    "Dental": vocab("tooth teeth toothache dental dentist gum gums سن أسنان ضرس ضروس لثة لثتي تسوس"),
+    "Ophthalmology": vocab("eye eyes vision sight blurry glasses ophthalmology عين عيون عيني نظر رؤية نظارة نظارات"),
+}
+EMERGENCY = vocab("emergency urgent bleeding unconscious fainted faint accident stroke seizure suicide overdose "
+                  "طوارئ طارئ طارئة نزيف ينزف إغماء مغمى حادث جلطة تشنج انتحار اختناق")
+EMERGENCY_PHRASES = [normalize(p) for p in ("can't breathe", "cannot breathe", "ما أقدر أتنفس", "لا أستطيع التنفس", "مو قادر أتنفس")]
+CANCEL = vocab("cancel reschedule postpone change move إلغاء الغي ألغي ألغيه كنسل تغيير اغير تأجيل")
+MY_EN, APPOINTMENT_EN = vocab("my mine"), vocab("appointment booking visit")
+MY_AR = vocab("مواعيدي موعدي حجوزاتي حجزي")
+BOOK = vocab("book booking available slot free earliest soon appointment حجز احجز موعد مواعيد متاح فاضي أقرب دكتور طبيب")
+HOURS = vocab("hour open opening close closing timing time when working دوام ساعات أوقات تفتحون تفتح يفتح مفتوح")
+CONTACT = vocab("contact phone call number address location where email find رقم هاتف تلفون جوال اتصال تواصل عنوان موقع وين ايميل بريد")
+DEPARTMENTS = vocab("department service specialty specialties clinic doctor list أقسام قسم تخصصات تخصص عيادات عيادة أطباء دكاترة")
+GREETINGS = vocab("hi hello hey salam salaam marhaba morning evening مرحبا هلا أهلا السلام سلام صباح مساء هاي")
+THANKS = vocab("thank thanks thx shukran شكرا مشكور يعطيك تسلم")
 
 
 def bot_reply(text):
-    """Rule-based NLP: keyword intent matching + symptom-to-department mapping + live slot lookup."""
-    words, low = tokens(text), text.lower()
-    has = lambda vocab: bool(words & set(vocab.split()))
+    """Rule-based NLP in Arabic and English: intent keywords, symptom-to-department mapping, live slot lookup."""
+    words, norm = tokens(text), normalize(text)
+    has = lambda terms: hits(words, terms) > 0
+    ltr = lambda s: f"\u2066{s}\u2069"  # keeps phone numbers readable inside Arabic text
 
-    if words & EMERGENCY or "can't breathe" in low or "cannot breathe" in low:
-        return {"reply": f"This sounds urgent. Please call {HOSPITAL['emergency']} or go to the nearest emergency department now. "
-                         "Our emergency department is open 24/7."}
-    if has("cancel reschedule postpone change move"):
-        return {"reply": "To cancel or reschedule: log in, open My Appointments, then press Cancel or Reschedule next to the visit. "
-                         "Rescheduling keeps the same doctor and lets you pick a new free time."}
-    if has("my mine") and has("appointment booking visit"):
+    if has(EMERGENCY) or any(p in norm for p in EMERGENCY_PHRASES):
+        return {"reply": _("This sounds urgent. Please call {emergency} or go to the nearest emergency department now. Our emergency department is open 24/7.").format(emergency=HOSPITAL["emergency"])}
+    if has(CANCEL):
+        return {"reply": _("To cancel or reschedule: log in, open My appointments, then press Cancel or Reschedule next to the visit. Rescheduling keeps the same doctor and lets you pick a new free time.")}
+    if (has(MY_EN) and has(APPOINTMENT_EN)) or has(MY_AR):
         if session.get("role") != "patient":
-            return {"reply": "Please log in as a patient and I will show your upcoming appointments."}
+            return {"reply": _("Please log in as a patient and I will show your upcoming appointments.")}
         rows = q("""SELECT a.day, a.time, d.name FROM appointments a JOIN users d ON d.id=a.doctor_id
                     WHERE a.patient_id=? AND a.status='booked' AND a.day>=? ORDER BY a.day, a.time""",
                  (session["uid"], date.today().isoformat()))
         if not rows:
-            return {"reply": "You have no upcoming appointments. Would you like me to find a free slot?"}
-        return {"reply": "Your upcoming appointments:\n" + "\n".join(f"- {nice_date(r['day'])} at {r['time']} with {r['name']}" for r in rows)}
+            return {"reply": _("You have no upcoming appointments. Would you like me to find a free slot?")}
+        line = _("- {date} at {time} with {doctor}")
+        return {"reply": _("Your upcoming appointments:") + "\n" + "\n".join(
+            line.format(date=nice_date(r["day"]), time=r["time"], doctor=_(r["name"])) for r in rows)}
 
     docs = doctors()
-    named = [d for d in docs if any(part in words for part in d["name"].lower().replace("-", " ").split()[1:] if len(part) > 3)]
-    dept = max(SYMPTOMS, key=lambda k: len(words & set(SYMPTOMS[k].split())))
-    dept = dept if words & set(SYMPTOMS[dept].split()) else None
-    if named or dept or has("book booking available slot free earliest soon appointment"):
+    named = [d for d in docs if words & {p for p in vocab(d["name"] + " " + AR.get(d["name"], "")) if len(p) > 3}]
+    dept = max(SYMPTOMS, key=lambda k: hits(words, SYMPTOMS[k]))
+    dept = dept if hits(words, SYMPTOMS[dept]) else None
+    if named or dept or has(BOOK):
         pool = named or [d for d in docs if d["department"] == dept] or docs
         slots = earliest_slots(pool)
         if named:
-            intro = f"Here are the earliest free times with {named[0]['name']}:"
+            intro = _("Here are the earliest free times with {doctor}:").format(doctor=_(named[0]["name"]))
         elif dept:
-            intro = (f"Based on what you described, the {dept} department is the right place to start "
-                     "(this is guidance, not a diagnosis). Earliest free times:")
+            intro = _("Based on what you described, the {dept} department is the right place to start (this is guidance, not a diagnosis). Earliest free times:").format(dept=_(dept))
         else:
-            intro = "Here are the earliest free appointments across the hospital:"
+            intro = _("Here are the earliest free appointments across the hospital:")
         if not slots:
-            return {"reply": intro + "\nNo free slots in the next two weeks, sorry. Please call us at " + HOSPITAL["phone"]}
+            return {"reply": intro + "\n" + _("No free slots in the next two weeks, sorry. Please call us at {phone}").format(phone=ltr(HOSPITAL["phone"]))}
         return {"reply": intro, "slots": [
-            {"doctor": doc["name"], "label": f"{doc['department']} - {nice_date(d.isoformat())} {s}",
+            {"doctor": _(doc["name"]), "label": f"{_(doc['department'])} - {nice_date(d.isoformat())} {s}",
              "url": url_for("book", doctor=doc["id"], day=d.isoformat(), time=s)} for d, s, doc in slots]}
 
-    if has("hour open opening close closing timing time when working"):
-        return {"reply": HOSPITAL["hours"]}
-    if has("contact phone call number address location where email find"):
-        return {"reply": f"Phone: {HOSPITAL['phone']}\nEmail: {HOSPITAL['email']}\nAddress: {HOSPITAL['address']}"}
-    if has("department service specialty specialties clinic doctor list"):
-        lines = [f"- {d['department']}: {d['name']}" for d in docs]
-        return {"reply": "Our departments and doctors:\n" + "\n".join(lines)}
-    if has("hi hello hey salam salaam marhaba morning evening"):
-        return {"reply": "Hello! I'm the SmartCare assistant. Tell me your symptoms or a department and I'll find you a free appointment."}
-    if has("thank thanks thx shukran"):
-        return {"reply": "You're welcome! Get well soon."}
-    return {"reply": "I can help you:\n- find a free appointment (e.g. \"I have a toothache\")\n- show your appointments\n"
-                     "- explain how to cancel or reschedule\n- give opening hours and contact details"}
+    if has(HOURS):
+        return {"reply": _(HOSPITAL["hours"])}
+    if has(CONTACT):
+        return {"reply": _("Phone: {phone}\nEmail: {email}\nAddress: {address}").format(
+            phone=ltr(HOSPITAL["phone"]), email=ltr(HOSPITAL["email"]), address=_(HOSPITAL["address"]))}
+    if has(DEPARTMENTS):
+        return {"reply": _("Our departments and doctors:") + "\n" + "\n".join(f"- {_(d['department'])}: {_(d['name'])}" for d in docs)}
+    if has(GREETINGS):
+        return {"reply": _("Hello! I'm the SmartCare assistant. Tell me your symptoms or a department and I'll find you a free appointment.")}
+    if has(THANKS):
+        return {"reply": _("You're welcome! Get well soon.")}
+    return {"reply": _("I can help you:\n- find a free appointment (e.g. \"I have a toothache\")\n- show your appointments\n- explain how to cancel or reschedule\n- give opening hours and contact details")}
 
 
 @app.post("/chat")
 def chat():
     message = ((request.get_json(silent=True) or {}).get("message") or "").strip()[:500]
     if not message:
-        return jsonify(reply="Please type a question.")
+        return jsonify(reply=_("Please type a question."))
     return jsonify(bot_reply(message))
 
 

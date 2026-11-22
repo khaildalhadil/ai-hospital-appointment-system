@@ -20,6 +20,8 @@ A web system for booking hospital appointments, with an AI patient assistant.
 - **المساعد الذكي:** موجود في كل صفحات الموقع. يقترح القسم المناسب حسب وصف الأعراض مع أقرب المواعيد المتاحة والحجز بضغطة واحدة، ويعرض مواعيد المريض وأوقات الدوام ومعلومات التواصل، ويوجّه الحالات الطارئة إلى رقم الطوارئ 9999.
 - **الطبيب:** عرض مواعيد اليوم والمواعيد القادمة والسابقة، وتحديد حالة كل موعد: تم، أو لم يحضر، أو ملغي.
 - **المدير:** إدارة جميع المواعيد وتغيير حالتها، وتحديد أيام وساعات دوام كل طبيب، وإضافة أطباء جدد، وعرض قائمة المرضى، وتقارير قابلة للطباعة.
+- **العربية والإنجليزية:** الموقع كاملاً، ومعه المساعد الذكي، يعمل باللغتين مع اتجاه من اليمين لليسار للعربية. التبديل من زر **English / العربية** أعلى الصفحة.
+- **الوضع الداكن:** زر 🌙 / ☀️ أعلى الصفحة، ويتذكر الموقع الاختيار.
 
 ### المتطلبات
 
@@ -50,9 +52,9 @@ A web system for booking hospital appointments, with an AI patient assistant.
 
 ### جولة سريعة
 
-1. فتح المساعد الذكي من زر **Ask the AI assistant** أسفل الصفحة، وكتابة: `I have a toothache`
-2. اختيار أحد المواعيد المقترحة، ثم تسجيل الدخول بحساب المريض، ثم الضغط على **Book appointment**.
-3. في صفحة **My appointments** يظهر الموعد مع التذكير وأزرار التغيير والإلغاء.
+1. فتح المساعد من زر **المساعد الذكي** أسفل الصفحة، وكتابة: `عندي ألم في الأسنان`
+2. اختيار أحد المواعيد المقترحة، ثم تسجيل الدخول بحساب المريض، ثم الضغط على **تأكيد الحجز**.
+3. في صفحة **مواعيدي** يظهر الموعد مع التذكير وأزرار التغيير والإلغاء.
 4. تسجيل الدخول بحساب الطبيب لإدارة مواعيده، وبحساب المدير لإدارة جداول الأطباء وعرض التقارير.
 
 ### حل المشاكل
@@ -84,13 +86,13 @@ flask --app app run --port 5001
 
 ### تخصيص البرنامج
 
-- اسم المستشفى ورقم الهاتف والعنوان وأوقات الدوام موجودة في المتغير `HOSPITAL` أعلى الملف `app.py`.
+- اسم المستشفى ورقم الهاتف والعنوان وأوقات الدوام موجودة في المتغير `HOSPITAL` أعلى الملف `app.py`، ونصها العربي في الملف `translations.py`.
 - الحسابات والمواعيد محفوظة في الملف `hospital.db` (قاعدة بيانات SQLite) الذي يُنشأ تلقائياً عند أول تشغيل.
 
 ### ملاحظات مهمة
 
-- واجهة الموقع باللغة الإنجليزية.
-- المساعد الذكي يعمل بالكلمات المفتاحية وقواعد محددة، بدون إنترنت أو اشتراك، ويفهم اللغة الإنجليزية فقط.
+- لغة الواجهة تُختار تلقائياً حسب لغة المتصفح، ويمكن تغييرها في أي وقت من زر اللغة أعلى الصفحة.
+- المساعد الذكي يعمل بالكلمات المفتاحية وقواعد محددة، بدون إنترنت أو اشتراك، ويفهم العربية والإنجليزية.
 - اقتراحات المساعد إرشادية وليست تشخيصاً طبياً.
 - التذكير يظهر داخل الموقع فقط، بدون رسائل SMS أو بريد إلكتروني.
 - البرنامج نسخة تجريبية تعمل على جهاز واحد، وغير مُعدّ للنشر على الإنترنت بوضعه الحالي.
@@ -101,6 +103,7 @@ flask --app app run --port 5001
 |---|---|
 | `run.bat` | تشغيل البرنامج على Windows |
 | `app.py` | الخادم: الحسابات والحجز والمساعد الذكي والتقارير |
+| `translations.py` | النصوص العربية للواجهة |
 | `templates/` | صفحات الموقع |
 | `static/` | التصميم ونافذة المساعد الذكي |
 | `test_app.py` | اختبار سريع للتأكد من عمل البرنامج: `python test_app.py` |
@@ -129,6 +132,8 @@ A web application that runs on your computer and lets patients book, reschedule 
 - **AI assistant:** available on every page. Suggests a department from described symptoms with the earliest free slots and one-click booking, shows the patient's appointments, opening hours and contact details, and directs emergencies to 9999.
 - **Doctor:** see today's, upcoming and past appointments, and mark each one completed, no-show or cancelled.
 - **Admin:** manage all appointments and their status, set each doctor's working days and hours, add doctors, view patients, and print reports.
+- **Arabic and English:** the whole site, including the assistant, works in both languages, with a right-to-left layout for Arabic. Switch with the **English / العربية** button at the top.
+- **Dark mode:** the 🌙 / ☀️ button at the top. The site remembers the choice.
 
 ### Requirements
 
@@ -159,7 +164,7 @@ Six more doctors log in with their first name followed by `@smartcare.test` (for
 
 ### Quick tour
 
-1. Click **Ask the AI assistant** at the bottom of the page and type `I have a toothache`.
+1. Click **Ask the AI assistant** at the bottom of the page and type `I have a toothache` (or in Arabic, `عندي ألم في الأسنان`).
 2. Pick one of the suggested times, log in with the patient account, then click **Book appointment**.
 3. **My appointments** shows the visit with a reminder and the Reschedule and Cancel buttons.
 4. Log in as the doctor to manage their appointments, or as the admin to manage doctor schedules and view reports.
@@ -193,13 +198,13 @@ flask --app app run --port 5001
 
 ### Customize
 
-- The hospital name, phone, address and opening hours are in `HOSPITAL` at the top of `app.py`.
+- The hospital name, phone, address and opening hours are in `HOSPITAL` at the top of `app.py`, and their Arabic text is in `translations.py`.
 - Accounts and appointments are stored in `hospital.db` (SQLite), which is created automatically on the first run.
 
 ### Good to know
 
-- The site's interface is in English.
-- The AI assistant works with keyword rules. It runs offline with no subscription and understands English only.
+- The interface follows the browser's language. Switch it any time with the language button at the top.
+- The AI assistant works with keyword rules. It runs offline with no subscription and understands Arabic and English.
 - Its department suggestions are guidance, not a medical diagnosis.
 - Reminders appear inside the site only, with no SMS or email.
 - This is a prototype for running on one computer. It is not set up for public internet hosting as it is.
@@ -210,6 +215,7 @@ flask --app app run --port 5001
 |---|---|
 | `run.bat` | Starts the program on Windows |
 | `app.py` | Server: accounts, booking, AI assistant and reports |
+| `translations.py` | Arabic text for the interface |
 | `templates/` | Site pages |
 | `static/` | Styles and the assistant chat window |
 | `test_app.py` | Quick self-check: `python test_app.py` |

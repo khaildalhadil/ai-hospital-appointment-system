@@ -20,7 +20,7 @@ function add(text, who, slots = []) {
 function openChat() {
   panel.hidden = false;
   toggle.setAttribute('aria-expanded', 'true');
-  if (!log.children.length) add("Hi! I'm the AI patient assistant. Describe your symptoms or ask about appointments, hours or contact details.", 'bot');
+  if (!log.children.length) add(panel.dataset.greeting, 'bot');
   input.focus();
 }
 
@@ -36,7 +36,7 @@ async function send(text) {
     const data = await res.json();
     add(data.reply, 'bot', data.slots);
   } catch {
-    add('Sorry, I could not reach the server. Please try again.', 'bot');
+    add(panel.dataset.error, 'bot');
   }
 }
 

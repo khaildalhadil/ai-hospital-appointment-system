@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Reports{% endblock %}
-{% macro breakdown(rows, extra=false) %}
+{% block title %}{{ _('Reports') }}{% endblock %}
+{% macro breakdown(rows, with_department=false) %}
 {% set top = rows|map(attribute='total')|max or 1 %}
 <div class="table-wrap"><table>
-  <thead><tr><th>Name</th>{% if extra %}<th>Department</th>{% endif %}<th>Total</th><th>Booked</th><th>Completed</th><th>Cancelled</th><th>No-show</th><th class="bar-col"></th></tr></thead>
+  <thead><tr><th>{{ _('Name') }}</th>{% if with_department %}<th>{{ _('Department') }}</th>{% endif %}<th>{{ _('Total') }}</th><th>{{ _('Booked') }}</th><th>{{ _('Completed') }}</th><th>{{ _('Cancelled') }}</th><th>{{ _('No-show') }}</th><th class="bar-col"></th></tr></thead>
   <tbody>
   {% for r in rows %}
-    <tr><td>{{ r.label }}</td>{% if extra %}<td>{{ r.department }}</td>{% endif %}
+    <tr><td>{{ _(r.label) }}</td>{% if with_department %}<td>{{ _(r.department) }}</td>{% endif %}
         <td><b>{{ r.total }}</b></td><td>{{ r.booked }}</td><td>{{ r.completed }}</td><td>{{ r.cancelled }}</td><td>{{ r.noshow }}</td>
         <td class="bar-col"><span class="bar" style="width: {{ (100 * r.total / top)|round }}%"></span></td></tr>
   {% endfor %}
@@ -15,32 +15,32 @@
 {% endmacro %}
 {% block content %}
 <div class="page-head">
-  <h1>Appointment reports</h1>
-  <button class="btn ghost no-print" onclick="window.print()">Print / save as PDF</button>
+  <h1>{{ _('Appointment reports') }}</h1>
+  <button class="btn ghost no-print" onclick="window.print()">{{ _('Print / save as PDF') }}</button>
 </div>
-<p class="muted">Generated {{ generated }}</p>
+<p class="muted">{{ _('Generated {time}').format(time=generated) }}</p>
 
 <div class="stats">
-  <div class="stat"><b>{{ totals.total }}</b><span>Total appointments</span></div>
-  <div class="stat"><b>{{ totals.booked }}</b><span>Booked</span></div>
-  <div class="stat"><b>{{ totals.completed }}</b><span>Completed</span></div>
-  <div class="stat"><b>{{ totals.cancelled }}</b><span>Cancelled</span></div>
-  <div class="stat"><b>{{ totals.noshow }}</b><span>No-shows</span></div>
-  <div class="stat"><b>{{ people.patients }}</b><span>Patients</span></div>
-  <div class="stat"><b>{{ people.doctors }}</b><span>Doctors</span></div>
+  <div class="stat"><b>{{ totals.total }}</b><span>{{ _('Total appointments') }}</span></div>
+  <div class="stat"><b>{{ totals.booked }}</b><span>{{ _('Booked') }}</span></div>
+  <div class="stat"><b>{{ totals.completed }}</b><span>{{ _('Completed') }}</span></div>
+  <div class="stat"><b>{{ totals.cancelled }}</b><span>{{ _('Cancelled') }}</span></div>
+  <div class="stat"><b>{{ totals.noshow }}</b><span>{{ _('No-shows') }}</span></div>
+  <div class="stat"><b>{{ people.patients }}</b><span>{{ _('Patients') }}</span></div>
+  <div class="stat"><b>{{ people.doctors }}</b><span>{{ _('Doctors') }}</span></div>
 </div>
 
-<h2>Next 7 days (booked)</h2>
+<h2>{{ _('Next 7 days (booked)') }}</h2>
 {% set peak = week|map(attribute=1)|max or 1 %}
 <div class="week">
   {% for d, n in week %}
-    <div class="day"><span class="col" style="height: {{ (100 * n / peak)|round }}%"></span><b>{{ n }}</b><small>{{ (d|nice_date)[:10] }}</small></div>
+    <div class="day"><span class="col" style="height: {{ (100 * n / peak)|round }}%"></span><b>{{ n }}</b><small>{{ d|nice_date(true) }}</small></div>
   {% endfor %}
 </div>
 
-<h2>By department</h2>
+<h2>{{ _('By department') }}</h2>
 {{ breakdown(by_dept) }}
 
-<h2>By doctor</h2>
-{{ breakdown(by_doc, extra=true) }}
+<h2>{{ _('By doctor') }}</h2>
+{{ breakdown(by_doc, with_department=true) }}
 {% endblock %}

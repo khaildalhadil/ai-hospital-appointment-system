@@ -1,7 +1,54 @@
 {% extends "base.html" %}
-{% block title %}About the project{% endblock %}
+{% block title %}{{ _('About the project') }}{% endblock %}
 {% block content %}
 <section class="prose">
+{% if lang == 'ar' %}
+  <p class="eyebrow">مشروع تخرج في علوم الحاسب</p>
+  <h1>نظام مواعيد المستشفى ودعم المرضى بالذكاء الاصطناعي</h1>
+  <dl class="meta">
+    <dt>إعداد</dt><dd><bdi>Hayat Salim Humaid AL-butini</bdi></dd>
+    <dt>المشرف</dt><dd><bdi>Abubuckr Samsudeen Shaffi</bdi></dd>
+    <dt>الكلية</dt><dd>كلية الخليج</dd>
+    <dt>التاريخ</dt><dd>24 مايو 2026</dd>
+  </dl>
+
+  <h2>المشكلة</h2>
+  <p>الحجز التقليدي في المستشفيات عبر الهاتف أو الحضور الشخصي يسبب طول الانتظار، وتعارض المواعيد، وتفويت المواعيد،
+    وبطء دعم المرضى، وزيادة العبء على موظفي المستشفى.</p>
+
+  <h2>الأهداف</h2>
+  <ol>
+    <li>تصميم نظام ذكي لحجز مواعيد المستشفى.</li>
+    <li>تطوير مساعد محادثة ذكي لدعم المرضى.</li>
+    <li>توفير تذكير تلقائي بالمواعيد للمرضى.</li>
+    <li>تقليل وقت انتظار المرضى وتعارض المواعيد.</li>
+    <li>تحسين التواصل بين المرضى والمستشفى.</li>
+    <li>حفظ سجلات مواعيد المرضى وإدارتها بشكل آمن.</li>
+  </ol>
+
+  <h2>كيف يحقق النموذج الأولي المتطلبات</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>المتطلب</th><th>التنفيذ</th></tr></thead>
+    <tbody>
+      <tr><td>التسجيل وتسجيل الدخول</td><td>حسابات للمرضى بكلمات مرور مشفرة، وصلاحيات منفصلة للمرضى والأطباء والمدير.</td></tr>
+      <tr><td>الحجز والإلغاء وتغيير الموعد عبر الإنترنت</td><td>الحجز يعرض الأوقات المتاحة فقط حسب جدول كل طبيب، وقيد في قاعدة البيانات يمنع الحجز المزدوج.</td></tr>
+      <tr><td>التذكير التلقائي</td><td>المواعيد خلال 48 ساعة تظهر كتذكير في لوحة المريض.</td></tr>
+      <tr><td>جداول الأطباء والأوقات المتاحة</td><td>المدير يحدد أيام وساعات دوام كل طبيب، والأوقات المتاحة تُحسب مباشرة.</td></tr>
+      <tr><td>دعم المساعد الذكي</td><td>مساعد يفهم الأسئلة بالعربية والإنجليزية بالقواعد: تحديد نية السؤال، وربط الأعراض بالقسم المناسب، واقتراح أقرب المواعيد المتاحة.</td></tr>
+      <tr><td>إدارة المدير</td><td>إدارة كل المواعيد وحالاتها، وجداول الأطباء، وإضافة أطباء، وسجلات المرضى.</td></tr>
+      <tr><td>التقارير</td><td>الإجماليات، وضغط المواعيد خلال 7 أيام، والتوزيع حسب القسم والطبيب، مع الطباعة كملف PDF.</td></tr>
+      <tr><td>حالات استخدام الطبيب</td><td>يرى الطبيب مواعيد اليوم والمواعيد القادمة ويحددها كمكتملة أو لم يحضر أو ملغاة.</td></tr>
+      <tr><td>اللغة والمظهر</td><td>واجهة بالعربية والإنجليزية مع اتجاه من اليمين لليسار، ووضع داكن يُحفظ حسب الاختيار.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>التقنيات</h2>
+  <p>الخادم بلغة Python (Flask)، وقاعدة بيانات SQLite (يمكن استبدالها بـ MySQL)، والواجهة بـ HTML و CSS و JavaScript.
+    اتبع التطوير منهجية Agile: التخطيط، والتحليل، والتصميم، والتطوير، والاختبار، والنشر، والصيانة.</p>
+
+  <p class="muted">خارج نطاق المشروع كما حُدد في البحث: التشخيص الطبي، والدفع الإلكتروني، وإدارة الوصفات الطبية.
+    اقتراحات المساعد إرشادية وليست تشخيصاً.</p>
+{% else %}
   <p class="eyebrow">Computer Science Dissertation Project</p>
   <h1>AI-Based Hospital Appointment and Patient Support System</h1>
   <dl class="meta">
@@ -29,14 +76,15 @@
   <div class="table-wrap"><table>
     <thead><tr><th>Requirement</th><th>Implementation</th></tr></thead>
     <tbody>
-      <tr><td>Register and log in</td><td>Patient accounts with hashed passwords (Werkzeug PBKDF2) and role-based access for patients, doctors and admins.</td></tr>
+      <tr><td>Register and log in</td><td>Patient accounts with hashed passwords and role-based access for patients, doctors and admins.</td></tr>
       <tr><td>Book, cancel, reschedule online</td><td>Booking only offers free slots generated from each doctor's schedule; a database unique index prevents double booking.</td></tr>
       <tr><td>Automatic reminders</td><td>Appointments in the next 48 hours appear as reminders on the patient dashboard.</td></tr>
       <tr><td>Doctor schedules &amp; availability</td><td>Admins set working days and hours per doctor; available times are calculated live.</td></tr>
-      <tr><td>AI chatbot support</td><td>Rule-based natural-language assistant: intent detection, symptom-to-department mapping, and live recommendation of the earliest free slots.</td></tr>
+      <tr><td>AI chatbot support</td><td>Rule-based natural-language assistant in Arabic and English: intent detection, symptom-to-department mapping, and live recommendation of the earliest free slots.</td></tr>
       <tr><td>Admin management</td><td>Manage all appointments and statuses, doctor schedules, new doctors and patient records.</td></tr>
       <tr><td>Reports</td><td>Totals, 7-day load and breakdowns by department and doctor, printable as PDF.</td></tr>
       <tr><td>Doctor use cases</td><td>Doctors see today's and upcoming appointments and mark them completed, no-show or cancelled.</td></tr>
+      <tr><td>Language and appearance</td><td>Arabic and English interface with right-to-left layout, and a dark mode that remembers the choice.</td></tr>
     </tbody>
   </table></div>
 
@@ -46,5 +94,6 @@
 
   <p class="muted">Out of scope, as defined in the project: medical diagnosis, online payment and prescription management.
     The assistant's department suggestions are guidance only, not a diagnosis.</p>
+{% endif %}
 </section>
 {% endblock %}

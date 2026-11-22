@@ -1,34 +1,54 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ lang }}" dir="{{ 'rtl' if lang == 'ar' else 'ltr' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}{{ hospital.name }}{% endblock %} · AI Appointments</title>
+  <title>{% block title %}{{ _(hospital.name) }}{% endblock %} · {{ _('AI Appointments') }}</title>
+  <script>
+    // Apply the saved theme (or the system one) before the page paints.
+    (function () {
+      var saved = null;
+      try { saved = localStorage.getItem('theme'); } catch (e) {}
+      document.documentElement.dataset.theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    })();
+    function toggleTheme() {
+      var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem('theme', next); } catch (e) {}
+    }
+  </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 <header class="topbar">
   <div class="wrap nav">
-    <a class="brand" href="{{ url_for('index') }}"><span class="logo">+</span>{{ hospital.name }}</a>
+    <a class="brand" href="{{ url_for('index') }}"><span class="logo">+</span>{{ _(hospital.name) }}</a>
     <nav>
-      <a href="{{ url_for('index') }}#departments">Departments</a>
-      <a href="{{ url_for('about') }}">About the project</a>
+      <a href="{{ url_for('index') }}#departments">{{ _('Departments') }}</a>
+      <a href="{{ url_for('about') }}">{{ _('About the project') }}</a>
       {% if session.uid %}
         {% if session.role == 'patient' %}
-          <a href="{{ url_for('patient_home') }}">My appointments</a>
-          <a class="btn sm" href="{{ url_for('book') }}">Book</a>
+          <a href="{{ url_for('patient_home') }}">{{ _('My appointments') }}</a>
+          <a class="btn sm" href="{{ url_for('book') }}">{{ _('Book') }}</a>
         {% elif session.role == 'doctor' %}
-          <a href="{{ url_for('doctor_home') }}">My schedule</a>
+          <a href="{{ url_for('doctor_home') }}">{{ _('My schedule') }}</a>
         {% else %}
-          <a href="{{ url_for('admin_home') }}">Admin</a>
-          <a href="{{ url_for('reports') }}">Reports</a>
+          <a href="{{ url_for('admin_home') }}">{{ _('Admin') }}</a>
+          <a href="{{ url_for('reports') }}">{{ _('Reports') }}</a>
         {% endif %}
-        <span class="who">{{ session.name }}</span>
-        <a href="{{ url_for('logout') }}">Log out</a>
+        <span class="who">{{ _(session.name) }}</span>
+        <a href="{{ url_for('logout') }}">{{ _('Log out') }}</a>
       {% else %}
-        <a href="{{ url_for('login') }}">Log in</a>
-        <a class="btn sm" href="{{ url_for('register') }}">Register</a>
+        <a href="{{ url_for('login') }}">{{ _('Log in') }}</a>
+        <a class="btn sm" href="{{ url_for('register') }}">{{ _('Register') }}</a>
       {% endif %}
+      <span class="tools">
+        <a class="tool" href="{{ url_for('set_lang', code='en' if lang == 'ar' else 'ar', next=request.full_path) }}"
+           lang="{{ 'en' if lang == 'ar' else 'ar' }}">{{ 'English' if lang == 'ar' else 'العربية' }}</a>
+        <button class="tool" type="button" onclick="toggleTheme()" aria-label="{{ _('Toggle dark mode') }}" title="{{ _('Toggle dark mode') }}">
+          <span class="if-light" aria-hidden="true">🌙</span><span class="if-dark" aria-hidden="true">☀️</span>
+        </button>
+      </span>
     </nav>
   </div>
 </header>
@@ -42,29 +62,31 @@
 
 <footer class="footer">
   <div class="wrap">
-    <strong>{{ hospital.name }}</strong> · {{ hospital.address }} · {{ hospital.phone }} · Emergency {{ hospital.emergency }}
-    <div class="muted">AI-Based Hospital Appointment and Patient Support System · Computer Science Dissertation Project, Gulf College</div>
+    <strong>{{ _(hospital.name) }}</strong> · {{ _(hospital.address) }} · <bdi>{{ hospital.phone }}</bdi> · {{ _('Emergency') }} {{ hospital.emergency }}
+    <div class="muted">{{ _('AI-Based Hospital Appointment and Patient Support System · Computer Science Dissertation Project, Gulf College') }}</div>
   </div>
 </footer>
 
 <button id="chat-toggle" class="chat-fab" aria-controls="chat" aria-expanded="false">
-  <span aria-hidden="true">💬</span> Ask the AI assistant
+  <span aria-hidden="true">💬</span> {{ _('Ask the AI assistant') }}
 </button>
-<section id="chat" class="chat" hidden aria-label="AI patient assistant">
+<section id="chat" class="chat" hidden aria-label="{{ _('AI Patient Assistant') }}"
+         data-greeting="{{ _("Hi! I'm the AI patient assistant. Describe your symptoms or ask about appointments, hours or contact details.") }}"
+         data-error="{{ _('Sorry, I could not reach the server. Please try again.') }}">
   <header>
-    <div><strong>AI Patient Assistant</strong><small>Booking help · hospital info</small></div>
-    <button id="chat-close" aria-label="Close assistant">×</button>
+    <div><strong>{{ _('AI Patient Assistant') }}</strong><small>{{ _('Booking help · hospital info') }}</small></div>
+    <button id="chat-close" aria-label="{{ _('Close assistant') }}">×</button>
   </header>
   <div id="chat-log" class="chat-log" aria-live="polite"></div>
   <div class="chips">
-    <button data-ask="I have a toothache">I have a toothache</button>
-    <button data-ask="Earliest available appointment">Earliest appointment</button>
-    <button data-ask="Show my appointments">My appointments</button>
-    <button data-ask="What are your opening hours?">Opening hours</button>
+    <button data-ask="{{ _('I have a toothache') }}">{{ _('I have a toothache') }}</button>
+    <button data-ask="{{ _('Earliest available appointment') }}">{{ _('Earliest appointment') }}</button>
+    <button data-ask="{{ _('Show my appointments') }}">{{ _('My appointments') }}</button>
+    <button data-ask="{{ _('What are your opening hours?') }}">{{ _('Opening hours') }}</button>
   </div>
   <form id="chat-form">
-    <input id="chat-input" placeholder="Describe symptoms or ask a question…" autocomplete="off" maxlength="500" aria-label="Message">
-    <button class="btn">Send</button>
+    <input id="chat-input" placeholder="{{ _('Describe symptoms or ask a question…') }}" autocomplete="off" maxlength="500" aria-label="{{ _('Message') }}">
+    <button class="btn">{{ _('Send') }}</button>
   </form>
 </section>
 <script src="{{ url_for('static', filename='chat.js') }}"></script>
