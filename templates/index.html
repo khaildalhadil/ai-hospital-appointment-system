@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">AI-based appointments &amp; patient support</p>
+    <h1>See the right doctor, without the waiting line.</h1>
+    <p class="lead">Book, reschedule or cancel hospital appointments online, get automatic reminders,
+      and ask our AI assistant which department fits your symptoms — any time of day.</p>
+    <div class="actions">
+      <a class="btn lg" href="{{ url_for('book') }}">Book an appointment</a>
+      <button class="btn lg ghost" data-open-chat>Ask the AI assistant</button>
+    </div>
+  </div>
+  <ul class="hero-card">
+    <li><b>{{ by_dept|length }}</b> departments</li>
+    <li><b>{{ by_dept.values()|map('length')|sum }}</b> specialist doctors</li>
+    <li><b>24/7</b> AI patient support</li>
+    <li><b>{{ hospital.emergency }}</b> emergency line</li>
+  </ul>
+</section>
+
+<section class="features">
+  <article class="card"><h3>Smart booking</h3><p>Pick a doctor and date and only see times that are really free. Double bookings are impossible.</p></article>
+  <article class="card"><h3>AI assistant</h3><p>Describe what you feel and the assistant suggests the right department and the earliest free slots.</p></article>
+  <article class="card"><h3>Automatic reminders</h3><p>Your dashboard reminds you of visits in the next 48 hours so you never miss one.</p></article>
+</section>
+
+<section id="departments">
+  <h2>Departments &amp; doctors</h2>
+  <div class="grid">
+    {% for dept, docs in by_dept.items() %}
+      <article class="card dept">
+        <h3>{{ dept }}</h3>
+        {% for d in docs %}
+          <div class="doc-row">
+            <span>{{ d.name }}</span>
+            <a href="{{ url_for('book', doctor=d.id) }}">Book →</a>
+          </div>
+        {% endfor %}
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="steps">
+  <h2>How it works</h2>
+  <ol>
+    <li><b>Create an account</b><span>Register in under a minute.</span></li>
+    <li><b>Choose a time</b><span>Pick a doctor, date and free slot — or let the AI suggest one.</span></li>
+    <li><b>Get reminded</b><span>See reminders and manage visits from your dashboard.</span></li>
+  </ol>
+</section>
+{% endblock %}

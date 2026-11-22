@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}My appointments{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>My appointments</h1>
+  <a class="btn" href="{{ url_for('book') }}">Book new appointment</a>
+</div>
+
+{% for r in reminders %}
+  <div class="reminder">
+    <b>Reminder:</b> {{ r.doctor }} ({{ r.department }}) on {{ r.day|nice_date }} at {{ r.time }}.
+    Please arrive 15 minutes early.
+  </div>
+{% endfor %}
+
+<h2>Upcoming</h2>
+{% if upcoming %}
+<div class="table-wrap"><table>
+  <thead><tr><th>Date</th><th>Time</th><th>Doctor</th><th>Department</th><th>Reason</th><th></th></tr></thead>
+  <tbody>
+  {% for r in upcoming %}
+    <tr>
+      <td>{{ r.day|nice_date }}</td><td>{{ r.time }}</td><td>{{ r.doctor }}</td><td>{{ r.department }}</td>
+      <td>{{ r.reason or '—' }}</td>
+      <td class="row-actions">
+        <a class="btn sm ghost" href="{{ url_for('book', reschedule=r.id) }}">Reschedule</a>
+        <form method="post" action="{{ url_for('set_status', aid=r.id) }}" onsubmit="return confirm('Cancel this appointment?')">
+          <input type="hidden" name="status" value="cancelled">
+          <button class="btn sm danger">Cancel</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+  <p class="empty">No upcoming appointments. <a href="{{ url_for('book') }}">Book one now</a> or ask the AI assistant for the earliest free slot.</p>
+{% endif %}
+
+<h2>History</h2>
+{% if history %}
+<div class="table-wrap"><table>
+  <thead><tr><th>Date</th><th>Time</th><th>Doctor</th><th>Department</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for r in history %}
+    <tr><td>{{ r.day|nice_date }}</td><td>{{ r.time }}</td><td>{{ r.doctor }}</td><td>{{ r.department }}</td>
+        <td><span class="pill {{ r.status }}">{{ r.status }}</span></td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+  <p class="empty">No past appointments yet.</p>
+{% endif %}
+{% endblock %}

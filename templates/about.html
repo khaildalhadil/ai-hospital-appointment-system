@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}About the project{% endblock %}
+{% block content %}
+<section class="prose">
+  <p class="eyebrow">Computer Science Dissertation Project</p>
+  <h1>AI-Based Hospital Appointment and Patient Support System</h1>
+  <dl class="meta">
+    <dt>Prepared by</dt><dd>Hayat Salim Humaid AL-butini</dd>
+    <dt>Supervisor</dt><dd>Abubuckr Samsudeen Shaffi</dd>
+    <dt>College</dt><dd>Gulf College</dd>
+    <dt>Date</dt><dd>24 May 2026</dd>
+  </dl>
+
+  <h2>Problem</h2>
+  <p>Traditional hospital booking by phone or in person leads to long waiting times, scheduling conflicts,
+    missed appointments, slow patient support and a heavy workload for hospital staff.</p>
+
+  <h2>Objectives</h2>
+  <ol>
+    <li>Design a smart hospital appointment booking system.</li>
+    <li>Develop an AI-powered patient support chatbot.</li>
+    <li>Provide automated appointment reminders for patients.</li>
+    <li>Reduce patient waiting time and scheduling conflicts.</li>
+    <li>Improve communication between patients and hospitals.</li>
+    <li>Store and manage patient appointment records securely.</li>
+  </ol>
+
+  <h2>How this prototype meets the requirements</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Requirement</th><th>Implementation</th></tr></thead>
+    <tbody>
+      <tr><td>Register and log in</td><td>Patient accounts with hashed passwords (Werkzeug PBKDF2) and role-based access for patients, doctors and admins.</td></tr>
+      <tr><td>Book, cancel, reschedule online</td><td>Booking only offers free slots generated from each doctor's schedule; a database unique index prevents double booking.</td></tr>
+      <tr><td>Automatic reminders</td><td>Appointments in the next 48 hours appear as reminders on the patient dashboard.</td></tr>
+      <tr><td>Doctor schedules &amp; availability</td><td>Admins set working days and hours per doctor; available times are calculated live.</td></tr>
+      <tr><td>AI chatbot support</td><td>Rule-based natural-language assistant: intent detection, symptom-to-department mapping, and live recommendation of the earliest free slots.</td></tr>
+      <tr><td>Admin management</td><td>Manage all appointments and statuses, doctor schedules, new doctors and patient records.</td></tr>
+      <tr><td>Reports</td><td>Totals, 7-day load and breakdowns by department and doctor, printable as PDF.</td></tr>
+      <tr><td>Doctor use cases</td><td>Doctors see today's and upcoming appointments and mark them completed, no-show or cancelled.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Technology</h2>
+  <p>Python (Flask) backend, SQLite database (swappable for MySQL), HTML, CSS and JavaScript frontend.
+    Development followed an Agile methodology: planning, analysis, design, development, testing, deployment and maintenance.</p>
+
+  <p class="muted">Out of scope, as defined in the project: medical diagnosis, online payment and prescription management.
+    The assistant's department suggestions are guidance only, not a diagnosis.</p>
+</section>
+{% endblock %}

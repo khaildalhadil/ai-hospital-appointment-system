@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ hospital.name }}{% endblock %} · AI Appointments</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="{{ url_for('index') }}"><span class="logo">+</span>{{ hospital.name }}</a>
+    <nav>
+      <a href="{{ url_for('index') }}#departments">Departments</a>
+      <a href="{{ url_for('about') }}">About the project</a>
+      {% if session.uid %}
+        {% if session.role == 'patient' %}
+          <a href="{{ url_for('patient_home') }}">My appointments</a>
+          <a class="btn sm" href="{{ url_for('book') }}">Book</a>
+        {% elif session.role == 'doctor' %}
+          <a href="{{ url_for('doctor_home') }}">My schedule</a>
+        {% else %}
+          <a href="{{ url_for('admin_home') }}">Admin</a>
+          <a href="{{ url_for('reports') }}">Reports</a>
+        {% endif %}
+        <span class="who">{{ session.name }}</span>
+        <a href="{{ url_for('logout') }}">Log out</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">Log in</a>
+        <a class="btn sm" href="{{ url_for('register') }}">Register</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  {% for cat, msg in get_flashed_messages(with_categories=true) %}
+    <div class="flash {{ cat }}" role="status">{{ msg }}</div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <strong>{{ hospital.name }}</strong> · {{ hospital.address }} · {{ hospital.phone }} · Emergency {{ hospital.emergency }}
+    <div class="muted">AI-Based Hospital Appointment and Patient Support System · Computer Science Dissertation Project, Gulf College</div>
+  </div>
+</footer>
+
+<button id="chat-toggle" class="chat-fab" aria-controls="chat" aria-expanded="false">
+  <span aria-hidden="true">💬</span> Ask the AI assistant
+</button>
+<section id="chat" class="chat" hidden aria-label="AI patient assistant">
+  <header>
+    <div><strong>AI Patient Assistant</strong><small>Booking help · hospital info</small></div>
+    <button id="chat-close" aria-label="Close assistant">×</button>
+  </header>
+  <div id="chat-log" class="chat-log" aria-live="polite"></div>
+  <div class="chips">
+    <button data-ask="I have a toothache">I have a toothache</button>
+    <button data-ask="Earliest available appointment">Earliest appointment</button>
+    <button data-ask="Show my appointments">My appointments</button>
+    <button data-ask="What are your opening hours?">Opening hours</button>
+  </div>
+  <form id="chat-form">
+    <input id="chat-input" placeholder="Describe symptoms or ask a question…" autocomplete="off" maxlength="500" aria-label="Message">
+    <button class="btn">Send</button>
+  </form>
+</section>
+<script src="{{ url_for('static', filename='chat.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
